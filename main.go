@@ -1,29 +1,30 @@
-package s3uploader
+package main
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/kr/s3/s3util"
 	"github.com/satori/go.uuid"
+	"github.com/sdemontfort/go-mimemagic"
 	"io"
 	"net/http"
 	"strings"
 )
 
-/**
- * Get file extension from name
- */
-func getFileExtension(filename string) string {
-	split := strings.Split(filename, ".")
-
-	// Return the last part of the split for the extension
-	return strings.ToLower(split[len(split)-1])
-}
-
 type AwsSettings struct {
 	AccessKey string
 	SecretKey string
 	Bucket    string
+}
+
+/**
+ * Get file extension from name
+ */
+func getFileExtension(file string) string {
+	split := strings.Split(file, ".")
+
+	// Return the last part of the split for the extension
+	return strings.ToLower(split[len(split)-1])
 }
 
 /**
@@ -42,23 +43,23 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 			break
 		}
 
-		originalFilename := part.FileName()
+		origFile := part.FileName()
 		// Generate a unique file name
-		fileExtension := getFileExtension(originalFilename)
-		filename := fmt.Sprintf("%s", uuid.NewV4())
-		fullfilename := filename + "." + fileExtension
+		ext := getFileExtension(origFile)
+		file := fmt.Sprintf("%s", uuid.NewV4())
+		fullFile := file + "." + ext
 
 		// Check the mime type
-		checkBuffer := make([]byte, 512)
-		part.Read(checkBuffer)
+		cBuff := make([]byte, 512)
+		part.Read(cBuff)
 
-		mimeType, _ := detectMimeType(checkBuffer)
-		joinedBody := io.MultiReader(bytes.NewReader(checkBuffer), part)
+		mime := mimemagic.Match("", cBuff)
+		joinedBody := io.MultiReader(bytes.NewReader(cBuff), part)
 
 		s3util.DefaultConfig.AccessKey = settings.AccessKey
 		s3util.DefaultConfig.SecretKey = settings.SecretKey
 
-		s3File, err := s3util.Create("http://"+settings.Bucket+".s3.amazonaws.com/"+fullfilename, nil, nil)
+		s3File, err := s3util.Create("http://"+settings.Bucket+".s3.amazonaws.com/"+fullFile, nil, nil)
 		if err != nil {
 			return "", "", "", "", err
 		}
@@ -66,7 +67,7 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 		io.Copy(s3File, joinedBody)
 		defer s3File.Close()
 
-		return filename, originalFilename, fileExtension, mimeType, nil
+		return file, origFile, ext, mime, nil
 	}
 
 	return "", "", "", "", nil
