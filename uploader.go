@@ -11,12 +11,6 @@ import (
 	"strings"
 )
 
-type AwsSettings struct {
-	AccessKey string
-	SecretKey string
-	Bucket    string
-}
-
 /**
  * Get file extension from name
  */
