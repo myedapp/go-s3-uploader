@@ -104,9 +104,9 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 		if err != nil {
 			return "", "", "", "", err
 		}
-
-		io.Copy(s3File, joinedBody)
 		defer s3File.Close()
+		
+		io.Copy(s3File, joinedBody)
 
 		return file, origFile, ext, mime, nil
 	}
