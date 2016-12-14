@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/kr/s3/s3util"
 	"github.com/satori/go.uuid"
-	"github.com/sdemontfort/go-mimemagic"
+	"gopkg.in/h2non/filetype.v1"
 	"io"
 	"net/http"
 	"strings"
@@ -76,12 +76,12 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 			decode, _ := base64.StdEncoding.DecodeString(sBuff)
 
 			// Check the mime type
-			mime = mimemagic.Match("", []byte(decode))
-
-			// Cheat for now
-			origFile = "video.mp4"
+			kind, _ := filetype.Match([]byte(decode))
+			mime = kind.MIME.Value
+			origFile = "file." + kind.Extension
 		} else {
-			mime = mimemagic.Match("", cBuff)
+			kind, _ := filetype.Match(cBuff)
+			mime = kind.MIME.Value
 			origFile = part.FileName()
 		}
 
@@ -105,7 +105,7 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 			return "", "", "", "", err
 		}
 		defer s3File.Close()
-		
+
 		io.Copy(s3File, joinedBody)
 
 		return file, origFile, ext, mime, nil
