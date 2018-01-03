@@ -88,7 +88,7 @@ func Upload(r *http.Request, settings AwsSettings) (string, string, string, stri
 		ext = getFileExtension(origFile)
 
 		// Generate a unique file name
-		file = fmt.Sprintf("%s", uuid.NewV4())
+		file = fmt.Sprintf("%s", uuid.Must(uuid.NewV4()))
 
 		joinedBody := io.MultiReader(bytes.NewReader(cBuff), part)
 
